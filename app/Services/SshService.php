@@ -2,35 +2,37 @@
 
 namespace App\Services;
 
-use Exception;
 use phpseclib4\Net\SSH2;
+use Exception;
 
 class SshService
 {
     public function rebootDevice(string $ip, string $user, string $password): array
     {
         try {
-            // Inisialisasi koneksi dengan timeout 5 detik
-            $ssh = new SSH2($ip, 22, 5);
+            // Timeout 10 detik untuk memastikan handshake selesai
+            $ssh = new SSH2($ip, 22, 10);
 
-            if (! $ssh->login($user, $password)) {
+            // Coba login ke perangkat UniFi
+            if (!$ssh->login($user, $password)) {
                 return [
                     'success' => false,
-                    'message' => "Autentikasi SSH gagal untuk IP: {$ip}",
+                    'message' => "Gagal login SSH ke {$ip}. Periksa kembali Username dan Password Device SSH Authentication di UniFi Controller."
                 ];
             }
 
-            // Eksekusi perintah reboot pada UniFi OS / BusyBox
+            // Jalankan perintah reboot pada perangkat UniFi
+            // Perangkat UniFi umumnya menggunakan perintah reboot langsung atau via busybox
             $ssh->exec('/sbin/reboot');
 
             return [
                 'success' => true,
-                'message' => "Perintah reboot berhasil dikirim ke {$ip}",
+                'message' => "Sinyal reboot berhasil dikirim ke perangkat {$ip}."
             ];
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Kesalahan koneksi: '.$e->getMessage(),
+                'message' => "Gagal terhubung ke {$ip}: " . $e->getMessage()
             ];
         }
     }
